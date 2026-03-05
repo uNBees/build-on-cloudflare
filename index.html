@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Build on Cloudflare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cf-orange: #F6821F;
+      --cf-orange-dim: #c96a18;
+      --cf-dark: #0A0A0B;
+      --cf-dark-2: #111114;
+      --cf-dark-3: #1A1A1F;
+      --cf-dark-4: #222228;
+      --cf-border: rgba(255,255,255,0.07);
+      --cf-text: #E8E8EC;
+      --cf-muted: #6B6B7A;
+      --cf-accent: #FF6B2B;
+      --radius: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--cf-dark);
+      color: var(--cf-text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* ── GLOW BG ── */
+    .bg-glow {
+      position: fixed;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 500px;
+      background: radial-gradient(ellipse at center, rgba(246,130,31,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+      background: rgba(10,10,11,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--cf-border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+    }
+
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--cf-text);
+      letter-spacing: -0.02em;
+    }
+
+    .logo-text span { color: var(--cf-orange); }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    nav a {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+      letter-spacing: 0.03em;
+    }
+
+    nav a:hover { color: var(--cf-text); background: var(--cf-dark-3); }
+
+    .nav-cta {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-dark) !important;
+      background: var(--cf-orange) !important;
+      padding: 0.4rem 1rem !important;
+      border-radius: 6px;
+      font-weight: 700;
+      transition: background 0.2s !important;
+    }
+
+    .nav-cta:hover { background: var(--cf-accent) !important; }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 7rem 1.5rem 5rem;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.25);
+      padding: 0.35rem 0.9rem;
+      border-radius: 100px;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cf-orange);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.04em;
+      color: #fff;
+      max-width: 800px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+
+    .hero h1 .highlight {
+      color: var(--cf-orange);
+      position: relative;
+    }
+
+    .hero-sub {
+      margin-top: 1.5rem;
+      font-size: 1.05rem;
+      color: var(--cf-muted);
+      max-width: 520px;
+      line-height: 1.7;
+      font-weight: 400;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--cf-orange);
+      color: #fff;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.75rem 1.6rem;
+      border-radius: 8px;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 0 24px rgba(246,130,31,0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--cf-accent);
+      transform: translateY(-1px);
+      box-shadow: 0 0 36px rgba(246,130,31,0.45);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--cf-muted);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.82rem;
+      padding: 0.75rem 1.6rem;
+      border-radius: 8px;
+      text-decoration: none;
+      border: 1px solid var(--cf-border);
+      transition: color 0.2s, border-color 0.2s, transform 0.15s;
+    }
+
+    .btn-secondary:hover {
+      color: var(--cf-text);
+      border-color: rgba(255,255,255,0.15);
+      transform: translateY(-1px);
+    }
+
+    /* ── STAT BAR ── */
+    .stat-bar {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      margin: 0 1.5rem 5rem;
+      border: 1px solid var(--cf-border);
+      border-radius: var(--radius);
+      background: var(--cf-dark-2);
+      overflow: hidden;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      animation: fadeUp 0.6s 0.4s ease both;
+    }
+
+    .stat-item {
+      flex: 1;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      border-right: 1px solid var(--cf-border);
+    }
+
+    .stat-item:last-child { border-right: none; }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.03em;
+    }
+
+    .stat-value span { color: var(--cf-orange); }
+
+    .stat-label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--cf-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 0.2rem;
+    }
+
+    /* ── SECTION ── */
+    .section {
+      position: relative;
+      z-index: 1;
+      padding: 0 1.5rem 6rem;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .section-label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    .section-desc {
+      margin-top: 0.75rem;
+      color: var(--cf-muted);
+      font-size: 0.95rem;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.7;
+    }
+
+    /* ── PROJECT GRID ── */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1px;
+      max-width: 1100px;
+      margin: 0 auto;
+      background: var(--cf-border);
+      border: 1px solid var(--cf-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .project-card {
+      background: var(--cf-dark-2);
+      padding: 1.75rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .project-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at top left, rgba(246,130,31,0.06) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .project-card:hover { background: var(--cf-dark-3); }
+    .project-card:hover::before { opacity: 1; }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .card-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: var(--cf-dark-4);
+      border: 1px solid var(--cf-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .card-number {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--cf-muted);
+      letter-spacing: 0.06em;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--cf-muted);
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid var(--cf-border);
+    }
+
+    .card-tag {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.2);
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+    }
+
+    .card-arrow {
+      color: var(--cf-muted);
+      font-size: 1rem;
+      transition: transform 0.2s, color 0.2s;
+    }
+
+    .project-card:hover .card-arrow {
+      transform: translate(3px, -3px);
+      color: var(--cf-orange);
+    }
+
+    .card-status {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--cf-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .status-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--cf-muted);
+    }
+
+    .status-dot.live { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+
+    /* ── STACK SECTION ── */
+    .stack-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .stack-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 100px;
+      padding: 0.45rem 1rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-text);
+      letter-spacing: 0.02em;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .stack-pill:hover {
+      background: var(--cf-dark-3);
+      border-color: rgba(246,130,31,0.3);
+    }
+
+    .stack-pill .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--cf-border);
+      max-width: 1100px;
+      margin: 0 auto 5rem;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      border-top: 1px solid var(--cf-border);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      letter-spacing: 0.04em;
+    }
+
+    footer a { color: var(--cf-orange); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeUp 0.55s ease both;
+    }
+
+    /* stagger cards */
+    .project-card:nth-child(1) { animation: fadeUp 0.5s 0.05s ease both; }
+    .project-card:nth-child(2) { animation: fadeUp 0.5s 0.10s ease both; }
+    .project-card:nth-child(3) { animation: fadeUp 0.5s 0.15s ease both; }
+    .project-card:nth-child(4) { animation: fadeUp 0.5s 0.20s ease both; }
+    .project-card:nth-child(5) { animation: fadeUp 0.5s 0.25s ease both; }
+    .project-card:nth-child(6) { animation: fadeUp 0.5s 0.30s ease both; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      header { padding: 0 1rem; }
+      nav a:not(.nav-cta) { display: none; }
+      .hero { padding: 5rem 1rem 3.5rem; }
+      .stat-bar { flex-direction: column; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--cf-border); }
+      .stat-item:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-glow"></div>
+
+  <!-- HEADER -->
+  <header>
+    <a href="#" class="logo">
+      <!-- Cloudflare-style flame icon -->
+      <svg class="logo-icon" viewBox="0 0 109 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M74.5 32.5c.6-2 .4-3.8-.6-5.2-1-1.3-2.6-2-4.5-2.1l-35.2-.5c-.2 0-.5-.1-.6-.3-.1-.2-.1-.5 0-.7.2-.4.7-.7 1.2-.7l35.5-.5c4.2-.2 8.8-3.6 10.4-7.7l2-5.3c.1-.2.1-.4 0-.6C80.5 4.2 74 0 66.4 0 61 0 56.1 2.3 52.7 6c-1.5-1.1-3.3-1.7-5.3-1.6-3.6.2-6.5 3-7 6.5-.2 1-.1 2 .2 2.9C36.4 14 33 17.5 33 21.8c0 .4 0 .8.1 1.1.1.3.3.5.6.5l39.4.1c.3 0 .6.1.7.4.2.3.2.6.1.9L73 26c-.3.8.3 1.5 1.1 1.5h.3c.1 0 .1 0 .1.1z" fill="#F6821F"/>
+        <path d="M86.3 17.3c-.3 0-.6 0-.8.1-.2 0-.3.2-.4.4l-1.1 3.7c-.6 2-.4 3.8.6 5.2 1 1.3 2.6 2 4.5 2.1l7.5.5c.2 0 .5.1.6.3.1.2.1.5 0 .7-.2.4-.7.7-1.2.7l-7.8.5c-4.2.2-8.8 3.6-10.4 7.7l-.5 1.5c-.1.3.1.5.4.5H108c.3 0 .5-.2.6-.4.7-2.1 1.1-4.4 1.1-6.7-.1-9.4-7.8-16.8-17.4-17.3-.4-.5-.7-.5-1-.5l-6 .5z" fill="#FBAD41"/>
+      </svg>
+      <span class="logo-text">Build on <span>Cloudflare</span></span>
+    </a>
+    <nav>
+      <a href="#projects">Projects</a>
+      <a href="#stack">Stack</a>
+      <a href="https://developers.cloudflare.com" target="_blank">Docs</a>
+      <a href="https://github.com" target="_blank" class="nav-cta">GitHub →</a>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">
+      <div class="badge-dot"></div>
+      A beginner's journey on the edge
+    </div>
+    <h1>From zero to <span class="highlight">shipped</span><br/>on Cloudflare</h1>
+    <p class="hero-sub">
+      7 real apps built by a novice. Each one explores a different piece of
+      Cloudflare's developer platform — Workers, Pages, D1, R2, KV, AI, and MCP.
+    </p>
+    <div class="hero-actions">
+      <a href="#projects" class="btn-primary">
+        Explore projects
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a href="https://developers.cloudflare.com" target="_blank" class="btn-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Read the docs
+      </a>
+    </div>
+  </section>
+
+  <!-- STAT BAR -->
+  <div class="stat-bar fade-in">
+    <div class="stat-item">
+      <div class="stat-value">7<span>×</span></div>
+      <div class="stat-label">Projects Built</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value"><span>#</span>0</div>
+      <div class="stat-label">Prior Experience</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">6<span>+</span></div>
+      <div class="stat-label">CF Services Used</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value"><span>∞</span></div>
+      <div class="stat-label">Free Tier Deploys</div>
+    </div>
+  </div>
+
+  <!-- PROJECTS -->
+  <section class="section" id="projects">
+    <div class="section-header">
+      <div class="section-label">// 01 — 07</div>
+      <h2 class="section-title">The Projects</h2>
+      <p class="section-desc">Each app is a standalone tutorial that teaches a core Cloudflare concept from scratch.</p>
+    </div>
+
+    <div class="projects-grid">
+
+      <!-- 01 Landing Page -->
+      <a class="project-card" href="#">
+        <div class="card-top">
+          <div class="card-icon">🏠</div>
+          <span class="card-number">01</span>
+        </div>
+        <div class="card-title">Landing Page</div>
+        <div class="card-desc">This very page. A static site deployed on Cloudflare Pages with zero config, instant global CDN, and free SSL.</div>
+        <div class="card-footer">
+          <span class="card-tag">Pages</span>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span class="card-status"><span class="status-dot live"></span>Live</span>
+            <span class="card-arrow">↗</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 02 Guestbook -->
+      <a class="project-card" href="#">
+        <div class="card-top">
+          <div class="card-icon">📖</div>
+          <span class="card-number">02</span>
+        </div>
+        <div class="card-title">Guestbook</div>
+        <div class="card-desc">A form that saves messages to a D1 SQLite database. Your first taste of serverless persistence with Workers + D1.</div>
+        <div class="card-footer">
+          <span class="card-tag">Workers + D1</span>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span class="card-status"><span class="status-dot"></span>Soon</span>
+            <span class="card-arrow">↗</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 03 Image Gallery -->
+      <a class="project-card" href="#">
+        <div class="card-top">
+          <div class="card-icon">🖼️</div>
+          <span class="card-number">03</span>
+        </div>
+        <div class="card-title">Image Gallery</div>
+        <div class="card-desc">Upload and display images stored in R2 object storage. No egress fees, S3-compatible, globally distributed.</div>
+        <div class="card-footer">
+          <span class="card-tag">Workers + R2</span>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span class="card-status"><span class="status-dot"></span>Soon</span>
+            <span class="card-arrow">↗</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 04 Visitor Counter -->
+      <a class="project-card" href="#">
+        <div class="card-top">
+          <div class="card-icon">📊</div>
+          <span class="card-number">04</span>
+        </div>
+        <div class="card-title">Visitor Counter</div>
+        <div class="card-desc">A real-time hit counter powered by Workers KV — a globally replicated key-value store. Simple, fast, satisfying.</div>
+        <div class="card-footer">
+          <span class="card-tag">Workers KV</span>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span class="card-status"><span class="status-dot"></span>Soon</span>
+            <span class="card-arrow">↗</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 05 URL Shortener -->
+      <a class="project-card" href="#">
+        <div class="card-top">
+          <div class="card-icon">🔗</div>
+          <span class="card-number">05</span>
+        </div>
+        <div class="card-title">URL Shortener</div>
+        <div class="card-desc">Create short links instantly with a Worker that stores mappings in KV and redirects at the edge. Classic project, edge speed.</div>
+        <div class="card-footer">
+          <span class="card-tag">Workers KV</span>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span class="card-status"><span class="status-dot"></span>Soon</span>
+            <span class="card-arrow">↗</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 06 AI Chatbot -->
+      <a class="project-card" href="#">
+        <div class="card-top">
+          <div class="card-icon">🤖</div>
+          <span class="card-number">06</span>
+        </div>
+        <div class="card-title">AI Chatbot</div>
+        <div class="card-desc">A chatbot powered by Workers AI — Cloudflare's built-in LLM runtime. No external API keys needed. AI at the edge.</div>
+        <div class="card-footer">
+          <span class="card-tag">Workers AI</span>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span class="card-status"><span class="status-dot"></span>Soon</span>
+            <span class="card-arrow">↗</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 07 MCP Server -->
+      <a class="project-card" href="#">
+        <div class="card-top">
+          <div class="card-icon">⚡</div>
+          <span class="card-number">07</span>
+        </div>
+        <div class="card-title">MCP Server</div>
+        <div class="card-desc">Build a remote Model Context Protocol server on Workers that exposes tools any AI client — like Claude — can call directly.</div>
+        <div class="card-footer">
+          <span class="card-tag">Workers + MCP</span>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <span class="card-status"><span class="status-dot"></span>Soon</span>
+            <span class="card-arrow">↗</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- STACK -->
+  <section class="section" id="stack">
+    <div class="section-header">
+      <div class="section-label">// Tools used</div>
+      <h2 class="section-title">The Stack</h2>
+      <p class="section-desc">Every project is built with free-tier Cloudflare services. No credit card required to get started.</p>
+    </div>
+    <div class="stack-grid">
+      <div class="stack-pill"><span class="dot" style="background:#F6821F"></span>Cloudflare Pages</div>
+      <div class="stack-pill"><span class="dot" style="background:#FBAD41"></span>Cloudflare Workers</div>
+      <div class="stack-pill"><span class="dot" style="background:#60a5fa"></span>Workers D1</div>
+      <div class="stack-pill"><span class="dot" style="background:#34d399"></span>Workers KV</div>
+      <div class="stack-pill"><span class="dot" style="background:#a78bfa"></span>R2 Storage</div>
+      <div class="stack-pill"><span class="dot" style="background:#f472b6"></span>Workers AI</div>
+      <div class="stack-pill"><span class="dot" style="background:#fb923c"></span>MCP Protocol</div>
+      <div class="stack-pill"><span class="dot" style="background:#94a3b8"></span>Wrangler CLI</div>
+      <div class="stack-pill"><span class="dot" style="background:#e2e8f0"></span>TypeScript</div>
+      <div class="stack-pill"><span class="dot" style="background:#22c55e"></span>Hono Framework</div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    Built with ☁️ on <a href="https://cloudflare.com" target="_blank">Cloudflare</a> &nbsp;·&nbsp;
+    Deployed on <a href="https://pages.cloudflare.com" target="_blank">Pages</a> &nbsp;·&nbsp;
+    Source on <a href="https://github.com" target="_blank">GitHub</a>
+  </footer>
+
+</body>
+</html>
