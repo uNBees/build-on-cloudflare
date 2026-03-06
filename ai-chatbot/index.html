@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Chatbot — Build on Cloudflare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cf-orange: #F6821F;
+      --cf-dark: #0A0A0B;
+      --cf-dark-2: #111114;
+      --cf-dark-3: #1A1A1F;
+      --cf-dark-4: #222228;
+      --cf-border: rgba(255,255,255,0.07);
+      --cf-text: #E8E8EC;
+      --cf-muted: #6B6B7A;
+    }
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--cf-dark);
+      color: var(--cf-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(246,130,31,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+      background: rgba(10,10,11,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--cf-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--cf-text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: var(--cf-orange); }
+    .back-link {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--cf-text); }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 780px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .chat-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .page-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.25);
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      margin-bottom: 1rem;
+    }
+    .chat-title {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .chat-subtitle {
+      color: var(--cf-muted);
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+    .messages-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      min-height: 300px;
+    }
+    .message {
+      display: flex;
+      gap: 0.75rem;
+      animation: fadeUp 0.3s ease both;
+    }
+    .message.user { flex-direction: row-reverse; }
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .message.user .message-avatar { background: var(--cf-orange); }
+    .message.assistant .message-avatar {
+      background: var(--cf-dark-3);
+      border: 1px solid var(--cf-border);
+    }
+    .message-bubble {
+      max-width: 75%;
+      padding: 0.875rem 1.1rem;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+    .message.user .message-bubble {
+      background: var(--cf-orange);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .message.assistant .message-bubble {
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      color: var(--cf-text);
+      border-bottom-left-radius: 4px;
+    }
+    .message-bubble code {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.8rem;
+      background: rgba(0,0,0,0.3);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+    .typing-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      animation: fadeUp 0.3s ease both;
+    }
+    .typing-indicator.visible { display: flex; }
+    .typing-dots {
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+      border-bottom-left-radius: 4px;
+      padding: 0.875rem 1.1rem;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--cf-muted);
+      animation: typingBounce 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .suggestion-btn {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--cf-muted);
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 100px;
+      padding: 0.4rem 0.9rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      letter-spacing: 0.02em;
+    }
+    .suggestion-btn:hover {
+      color: var(--cf-orange);
+      border-color: rgba(246,130,31,0.3);
+      background: rgba(246,130,31,0.05);
+    }
+    .input-area {
+      display: flex;
+      gap: 0.75rem;
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+      padding: 0.75rem;
+      transition: border-color 0.2s;
+    }
+    .input-area:focus-within { border-color: rgba(246,130,31,0.4); }
+    .chat-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--cf-text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      resize: none;
+      min-height: 24px;
+      max-height: 120px;
+      line-height: 1.5;
+      padding: 0.1rem 0;
+    }
+    .chat-input::placeholder { color: var(--cf-muted); }
+    .send-btn {
+      background: var(--cf-orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      flex-shrink: 0;
+      align-self: flex-end;
+    }
+    .send-btn:hover { background: #e07318; transform: scale(1.05); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .input-hint {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--cf-muted);
+      text-align: center;
+      margin-top: 0.6rem;
+      opacity: 0.6;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="https://build.siliceoroman.xyz">Build on <span>Cloudflare</span></a>
+    <a href="https://build.siliceoroman.xyz" class="back-link">← Back to projects</a>
+  </header>
+
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="page-badge">Project 06 — Workers AI</div>
+      <div class="chat-title">🤖 CloudflareBot</div>
+      <div class="chat-subtitle">Powered by Llama 3.1 via Cloudflare Workers AI. Ask me anything about the Cloudflare platform!</div>
+    </div>
+
+    <div class="messages-area" id="messagesArea">
+      <div class="message assistant">
+        <div class="message-avatar">🤖</div>
+        <div class="message-bubble">
+          Hey there! I'm CloudflareBot, running on <code>Llama 3.1</code> via Cloudflare Workers AI — no external API keys needed! Ask me anything about Workers, Pages, D1, R2, KV, or anything else Cloudflare. How can I help?
+        </div>
+      </div>
+    </div>
+
+    <div class="typing-indicator" id="typingIndicator">
+      <div class="message-avatar" style="width:32px;height:32px;border-radius:8px;background:var(--cf-dark-3);border:1px solid var(--cf-border);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">🤖</div>
+      <div class="typing-dots">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+
+    <div class="suggestions" id="suggestions">
+      <button class="suggestion-btn" onclick="sendSuggestion(this)">What is a Cloudflare Worker?</button>
+      <button class="suggestion-btn" onclick="sendSuggestion(this)">How does Workers KV work?</button>
+      <button class="suggestion-btn" onclick="sendSuggestion(this)">What is D1 database?</button>
+      <button class="suggestion-btn" onclick="sendSuggestion(this)">Explain R2 storage</button>
+      <button class="suggestion-btn" onclick="sendSuggestion(this)">What is MCP?</button>
+    </div>
+
+    <div class="input-area">
+      <textarea class="chat-input" id="chatInput" placeholder="Ask about Cloudflare..." rows="1"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="input-hint">Press Enter to send · Shift+Enter for new line</div>
+  </div>
+
+  <script>
+    const conversationHistory = [];
+
+    function addMessage(role, content) {
+      const area = document.getElementById('messagesArea');
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.innerHTML = `
+        <div class="message-avatar">${role === 'user' ? '👤' : '🤖'}</div>
+        <div class="message-bubble">${escapeHtml(content).replace(/\`([^\`]+)\`/g, '<code>$1</code>')}</div>
+      `;
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const content = input.value.trim();
+      if (!content) return;
+      document.getElementById('suggestions').style.display = 'none';
+      input.value = '';
+      input.style.height = 'auto';
+      addMessage('user', content);
+      conversationHistory.push({ role: 'user', content });
+      const btn = document.getElementById('sendBtn');
+      btn.disabled = true;
+      document.getElementById('typingIndicator').classList.add('visible');
+      document.getElementById('messagesArea').scrollTop = 99999;
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: conversationHistory })
+        });
+        const data = await res.json();
+        const reply = data.reply || 'Sorry, I could not generate a response.';
+        conversationHistory.push({ role: 'assistant', content: reply });
+        document.getElementById('typingIndicator').classList.remove('visible');
+        addMessage('assistant', reply);
+      } catch (e) {
+        document.getElementById('typingIndicator').classList.remove('visible');
+        addMessage('assistant', 'Sorry, something went wrong. Please try again!');
+      }
+      btn.disabled = false;
+      input.focus();
+    }
+
+    function sendSuggestion(btn) {
+      document.getElementById('chatInput').value = btn.textContent;
+      sendMessage();
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+    }
+
+    document.getElementById('chatInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    document.getElementById('chatInput').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+  </script>
+</body>
+</html>
