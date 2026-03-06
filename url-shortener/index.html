@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Shortener — Build on Cloudflare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cf-orange: #F6821F;
+      --cf-dark: #0A0A0B;
+      --cf-dark-2: #111114;
+      --cf-dark-3: #1A1A1F;
+      --cf-dark-4: #222228;
+      --cf-border: rgba(255,255,255,0.07);
+      --cf-text: #E8E8EC;
+      --cf-muted: #6B6B7A;
+    }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--cf-dark);
+      color: var(--cf-text);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(246,130,31,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+      background: rgba(10,10,11,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--cf-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--cf-text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--cf-orange); }
+
+    .back-link {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--cf-text); }
+
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+    }
+
+    .page-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.25);
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #fff;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      color: var(--cf-muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-bottom: 3rem;
+    }
+
+    /* SHORTEN FORM */
+    .shorten-card {
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .form-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.5rem;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    input[type="url"], input[type="text"] {
+      flex: 1;
+      background: var(--cf-dark-3);
+      border: 1px solid var(--cf-border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--cf-text);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.82rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    input:focus { border-color: rgba(246,130,31,0.5); }
+
+    .shorten-btn {
+      background: var(--cf-orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+
+    .shorten-btn:hover { background: #e07318; transform: translateY(-1px); }
+    .shorten-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* RESULT */
+    .result-box {
+      display: none;
+      margin-top: 1.5rem;
+      background: var(--cf-dark-3);
+      border: 1px solid rgba(246,130,31,0.25);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+
+    .result-label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      margin-bottom: 0.6rem;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .result-url {
+      flex: 1;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.85rem;
+      color: #fff;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      background: var(--cf-dark-4);
+      color: var(--cf-text);
+      border: 1px solid var(--cf-border);
+      border-radius: 6px;
+      padding: 0.4rem 0.85rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover { background: var(--cf-dark-3); color: var(--cf-orange); }
+    .copy-btn.copied { color: #22c55e; border-color: rgba(34,197,94,0.3); }
+
+    /* LINKS TABLE */
+    .links-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .links-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .links-count {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--cf-muted);
+    }
+
+    .links-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--cf-border);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .link-item {
+      background: var(--cf-dark-2);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: background 0.2s;
+    }
+
+    .link-item:hover { background: var(--cf-dark-3); }
+
+    .link-code {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.2);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .link-destination {
+      flex: 1;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .link-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .link-visit {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--cf-muted);
+      text-decoration: none;
+      padding: 0.25rem 0.6rem;
+      border: 1px solid var(--cf-border);
+      border-radius: 4px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .link-visit:hover { color: var(--cf-orange); border-color: rgba(246,130,31,0.3); }
+
+    .link-delete {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--cf-muted);
+      background: none;
+      border: 1px solid var(--cf-border);
+      border-radius: 4px;
+      padding: 0.25rem 0.6rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .link-delete:hover { color: #ef4444; border-color: rgba(239,68,68,0.3); }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--cf-muted);
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="https://build.siliceoroman.xyz" class="logo">Build on <span>Cloudflare</span></a>
+    <a href="https://build.siliceoroman.xyz" class="back-link">← Back to projects</a>
+  </header>
+
+  <main>
+    <div class="page-badge">Project 05 — Workers KV</div>
+    <h1>URL Shortener</h1>
+    <p class="subtitle">Paste a long URL and get a short link instantly. Links are stored in Cloudflare Workers KV and redirect at the edge.</p>
+
+    <!-- SHORTEN FORM -->
+    <div class="shorten-card">
+      <div class="form-title">🔗 Shorten a URL</div>
+      <div class="input-row">
+        <input type="url" id="longUrl" placeholder="https://example.com/your/very/long/url" />
+        <button class="shorten-btn" id="shortenBtn" onclick="shortenUrl()">Shorten →</button>
+      </div>
+
+      <div class="result-box" id="resultBox">
+        <div class="result-label">✅ Your short link</div>
+        <div class="result-row">
+          <div class="result-url" id="resultUrl"></div>
+          <button class="copy-btn" id="copyBtn" onclick="copyUrl()">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LINKS LIST -->
+    <div class="links-header">
+      <div class="links-title">Your Links</div>
+      <div class="links-count" id="linksCount"></div>
+    </div>
+    <div id="linksContainer"><div class="empty-state">Loading links...</div></div>
+  </main>
+
+  <script>
+    let currentShortUrl = '';
+
+    async function shortenUrl() {
+      const longUrl = document.getElementById('longUrl').value.trim();
+      const btn = document.getElementById('shortenBtn');
+
+      if (!longUrl) { alert('Please enter a URL!'); return; }
+      if (!longUrl.startsWith('http')) { alert('Please include http:// or https://'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Shortening...';
+
+      try {
+        const res = await fetch('/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ longUrl })
+        });
+        const data = await res.json();
+        currentShortUrl = data.shortUrl;
+        document.getElementById('resultUrl').textContent = data.shortUrl;
+        document.getElementById('resultBox').style.display = 'block';
+        document.getElementById('copyBtn').textContent = 'Copy';
+        document.getElementById('copyBtn').classList.remove('copied');
+        document.getElementById('longUrl').value = '';
+        loadLinks();
+      } catch (e) {
+        alert('Error shortening URL. Please try again.');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Shorten →';
+    }
+
+    function copyUrl() {
+      navigator.clipboard.writeText(currentShortUrl);
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+
+    async function loadLinks() {
+      try {
+        const res = await fetch('/links');
+        const links = await res.json();
+        const container = document.getElementById('linksContainer');
+        const count = document.getElementById('linksCount');
+
+        count.textContent = `${links.length} link${links.length !== 1 ? 's' : ''}`;
+
+        if (links.length === 0) {
+          container.innerHTML = '<div class="empty-state">No links yet — shorten one above! 👆</div>';
+          return;
+        }
+
+        const origin = window.location.origin;
+        container.innerHTML = `<div class="links-list">${links.map(link => `
+          <div class="link-item">
+            <span class="link-code">${link.code}</span>
+            <span class="link-destination">${link.destination}</span>
+            <div class="link-actions">
+              <a class="link-visit" href="/${link.code}" target="_blank">Visit ↗</a>
+              <button class="link-delete" onclick="deleteLink('${link.code}')">Delete</button>
+            </div>
+          </div>
+        `).join('')}</div>`;
+      } catch (e) {
+        document.getElementById('linksContainer').innerHTML =
+          '<div class="empty-state">Could not load links.</div>';
+      }
+    }
+
+    async function deleteLink(code) {
+      if (!confirm(`Delete link "/${code}"?`)) return;
+      await fetch(`/links/${code}`, { method: 'DELETE' });
+      loadLinks();
+    }
+
+    // Allow Enter key to shorten
+    document.getElementById('longUrl').addEventListener('keydown', e => {
+      if (e.key === 'Enter') shortenUrl();
+    });
+
+    loadLinks();
+  </script>
+
+</body>
+</html>
