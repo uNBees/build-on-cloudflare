@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guestbook — Build on Cloudflare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cf-orange: #F6821F;
+      --cf-dark: #0A0A0B;
+      --cf-dark-2: #111114;
+      --cf-dark-3: #1A1A1F;
+      --cf-dark-4: #222228;
+      --cf-border: rgba(255,255,255,0.07);
+      --cf-text: #E8E8EC;
+      --cf-muted: #6B6B7A;
+    }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--cf-dark);
+      color: var(--cf-text);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(246,130,31,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+      background: rgba(10,10,11,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--cf-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--cf-text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--cf-orange); }
+
+    .back-link {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--cf-text); }
+
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+    }
+
+    .page-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.25);
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #fff;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      color: var(--cf-muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-bottom: 3rem;
+    }
+
+    /* FORM */
+    .form-card {
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .form-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cf-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    input, textarea {
+      width: 100%;
+      background: var(--cf-dark-3);
+      border: 1px solid var(--cf-border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--cf-text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    input:focus, textarea:focus {
+      border-color: rgba(246,130,31,0.5);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: var(--cf-orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.85rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      margin-top: 0.5rem;
+    }
+
+    .submit-btn:hover {
+      background: #e07318;
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .success-msg {
+      display: none;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: #22c55e;
+      margin-top: 0.75rem;
+      text-align: center;
+    }
+
+    /* MESSAGES */
+    .messages-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .messages-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .messages-count {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--cf-muted);
+    }
+
+    .messages-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--cf-border);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .message-item {
+      background: var(--cf-dark-2);
+      padding: 1.25rem 1.5rem;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .message-item:hover { background: var(--cf-dark-3); }
+
+    .message-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .message-name {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #fff;
+    }
+
+    .message-time {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--cf-muted);
+    }
+
+    .message-text {
+      font-size: 0.88rem;
+      color: var(--cf-muted);
+      line-height: 1.6;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--cf-muted);
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--cf-muted);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="/" class="logo">Build on <span>Cloudflare</span></a>
+    <a href="/" class="back-link">← Back to projects</a>
+  </header>
+
+  <main>
+    <div class="page-badge">Project 02 — Workers + D1</div>
+    <h1>Guestbook</h1>
+    <p class="subtitle">Leave a message! This form saves to a Cloudflare D1 SQLite database via a Worker running at the edge.</p>
+
+    <!-- FORM -->
+    <div class="form-card">
+      <div class="form-title">✍️ Leave a message</div>
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="name" placeholder="e.g. Jane Smith" maxlength="50" />
+      </div>
+      <div class="form-group">
+        <label>Message</label>
+        <textarea id="message" placeholder="Say something nice..." maxlength="300"></textarea>
+      </div>
+      <button class="submit-btn" id="submitBtn" onclick="submitMessage()">Post Message →</button>
+      <div class="success-msg" id="successMsg">✅ Message posted successfully!</div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="messages-header">
+      <div class="messages-title">Messages</div>
+      <div class="messages-count" id="messagesCount"></div>
+    </div>
+    <div id="messagesList"><div class="loading">Loading messages...</div></div>
+  </main>
+
+  <script>
+    const API = '';  // empty = same origin (Worker serves both)
+
+    async function loadMessages() {
+      try {
+        const res = await fetch(`${API}/messages`);
+        const data = await res.json();
+        const list = document.getElementById('messagesList');
+        const count = document.getElementById('messagesCount');
+
+        count.textContent = `${data.length} message${data.length !== 1 ? 's' : ''}`;
+
+        if (data.length === 0) {
+          list.innerHTML = '<div class="empty-state">No messages yet — be the first! 👆</div>';
+          return;
+        }
+
+        list.innerHTML = `<div class="messages-list">${data.map(m => `
+          <div class="message-item">
+            <div class="message-meta">
+              <span class="message-name">${escapeHtml(m.name)}</span>
+              <span class="message-time">${formatDate(m.created_at)}</span>
+            </div>
+            <div class="message-text">${escapeHtml(m.message)}</div>
+          </div>
+        `).join('')}</div>`;
+      } catch (e) {
+        document.getElementById('messagesList').innerHTML =
+          '<div class="empty-state">Could not load messages.</div>';
+      }
+    }
+
+    async function submitMessage() {
+      const name = document.getElementById('name').value.trim();
+      const message = document.getElementById('message').value.trim();
+      const btn = document.getElementById('submitBtn');
+      const success = document.getElementById('successMsg');
+
+      if (!name || !message) {
+        alert('Please fill in both fields!');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Posting...';
+
+      try {
+        await fetch(`${API}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, message })
+        });
+
+        document.getElementById('name').value = '';
+        document.getElementById('message').value = '';
+        success.style.display = 'block';
+        setTimeout(() => success.style.display = 'none', 3000);
+        loadMessages();
+      } catch (e) {
+        alert('Error posting message. Please try again.');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Post Message →';
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function formatDate(str) {
+      if (!str) return '';
+      const d = new Date(str);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    loadMessages();
+  </script>
+
+</body>
+</html>
