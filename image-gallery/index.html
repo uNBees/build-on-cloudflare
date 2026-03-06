@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Gallery — Build on Cloudflare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cf-orange: #F6821F;
+      --cf-dark: #0A0A0B;
+      --cf-dark-2: #111114;
+      --cf-dark-3: #1A1A1F;
+      --cf-dark-4: #222228;
+      --cf-border: rgba(255,255,255,0.07);
+      --cf-text: #E8E8EC;
+      --cf-muted: #6B6B7A;
+    }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--cf-dark);
+      color: var(--cf-text);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(246,130,31,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+      background: rgba(10,10,11,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--cf-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--cf-text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--cf-orange); }
+
+    .back-link {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--cf-text); }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+    }
+
+    .page-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.25);
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #fff;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      color: var(--cf-muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-bottom: 3rem;
+    }
+
+    /* UPLOAD */
+    .upload-card {
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .upload-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.5rem;
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--cf-border);
+      border-radius: 12px;
+      padding: 3rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: rgba(246,130,31,0.5);
+      background: rgba(246,130,31,0.03);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+
+    .drop-text {
+      font-size: 0.9rem;
+      color: var(--cf-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .drop-hint {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--cf-muted);
+      opacity: 0.6;
+    }
+
+    .selected-file {
+      margin-top: 1rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--cf-orange);
+      display: none;
+    }
+
+    .upload-btn {
+      width: 100%;
+      background: var(--cf-orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.85rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      margin-top: 1.25rem;
+    }
+
+    .upload-btn:hover { background: #e07318; transform: translateY(-1px); }
+    .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .progress-bar {
+      display: none;
+      height: 4px;
+      background: var(--cf-dark-4);
+      border-radius: 2px;
+      margin-top: 1rem;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--cf-orange);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .upload-success {
+      display: none;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: #22c55e;
+      margin-top: 0.75rem;
+      text-align: center;
+    }
+
+    /* GALLERY */
+    .gallery-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .gallery-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .gallery-count {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--cf-muted);
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1px;
+      background: var(--cf-border);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .gallery-item {
+      background: var(--cf-dark-2);
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      cursor: pointer;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+
+    .gallery-item:hover img { transform: scale(1.05); }
+
+    .gallery-item-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      opacity: 0;
+      transition: opacity 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .gallery-item:hover .gallery-item-overlay { opacity: 1; }
+
+    .overlay-filename {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      color: #fff;
+      text-align: center;
+      padding: 0 1rem;
+      word-break: break-all;
+    }
+
+    .delete-btn {
+      background: rgba(239,68,68,0.8);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .delete-btn:hover { background: rgb(239,68,68); }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--cf-muted);
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+    }
+
+    /* LIGHTBOX */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox.active { display: flex; }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 2rem;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+
+    .lightbox-close:hover { opacity: 1; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="https://build.siliceoroman.xyz" class="logo">Build on <span>Cloudflare</span></a>
+    <a href="https://build.siliceoroman.xyz" class="back-link">← Back to projects</a>
+  </header>
+
+  <main>
+    <div class="page-badge">Project 03 — Workers + R2</div>
+    <h1>Image Gallery</h1>
+    <p class="subtitle">Upload and store images in Cloudflare R2 object storage. No egress fees, globally distributed, S3-compatible.</p>
+
+    <!-- UPLOAD -->
+    <div class="upload-card">
+      <div class="upload-title">📤 Upload an image</div>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(this)" />
+        <div class="drop-icon">🖼️</div>
+        <div class="drop-text">Drop an image here or click to browse</div>
+        <div class="drop-hint">PNG, JPG, GIF, WEBP supported</div>
+      </div>
+      <div class="selected-file" id="selectedFile"></div>
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="upload-success" id="uploadSuccess">✅ Image uploaded successfully!</div>
+      <button class="upload-btn" id="uploadBtn" onclick="uploadImage()" disabled>Select an image first</button>
+    </div>
+
+    <!-- GALLERY -->
+    <div class="gallery-header">
+      <div class="gallery-title">Gallery</div>
+      <div class="gallery-count" id="galleryCount"></div>
+    </div>
+    <div id="galleryContainer"><div class="empty-state">Loading images...</div></div>
+
+    <!-- LIGHTBOX -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+      <button class="lightbox-close" onclick="closeLightbox()">×</button>
+      <img id="lightboxImg" src="" alt="" />
+    </div>
+  </main>
+
+  <script>
+    let selectedFile = null;
+
+    function handleFileSelect(input) {
+      selectedFile = input.files[0];
+      if (!selectedFile) return;
+      const fileEl = document.getElementById('selectedFile');
+      fileEl.textContent = `Selected: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)`;
+      fileEl.style.display = 'block';
+      const btn = document.getElementById('uploadBtn');
+      btn.disabled = false;
+      btn.textContent = 'Upload Image →';
+    }
+
+    async function uploadImage() {
+      if (!selectedFile) return;
+      const btn = document.getElementById('uploadBtn');
+      const progress = document.getElementById('progressBar');
+      const fill = document.getElementById('progressFill');
+      const success = document.getElementById('uploadSuccess');
+
+      btn.disabled = true;
+      btn.textContent = 'Uploading...';
+      progress.style.display = 'block';
+      fill.style.width = '30%';
+
+      try {
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+        fill.style.width = '60%';
+        await fetch('/upload', { method: 'POST', body: formData });
+        fill.style.width = '100%';
+        setTimeout(() => {
+          progress.style.display = 'none';
+          fill.style.width = '0%';
+        }, 500);
+        success.style.display = 'block';
+        setTimeout(() => success.style.display = 'none', 3000);
+        document.getElementById('selectedFile').style.display = 'none';
+        document.getElementById('fileInput').value = '';
+        selectedFile = null;
+        btn.textContent = 'Select an image first';
+        loadGallery();
+      } catch (e) {
+        alert('Upload failed. Please try again.');
+      }
+
+      btn.disabled = true;
+    }
+
+    async function loadGallery() {
+      try {
+        const res = await fetch('/images');
+        const images = await res.json();
+        const container = document.getElementById('galleryContainer');
+        const count = document.getElementById('galleryCount');
+
+        count.textContent = `${images.length} image${images.length !== 1 ? 's' : ''}`;
+
+        if (images.length === 0) {
+          container.innerHTML = '<div class="empty-state">No images yet — upload one above! 👆</div>';
+          return;
+        }
+
+        container.innerHTML = `<div class="gallery-grid">${images.map(img => `
+          <div class="gallery-item">
+            <img src="/images/${encodeURIComponent(img.key)}" alt="${img.key}" onclick="openLightbox('/images/${encodeURIComponent(img.key)}')" />
+            <div class="gallery-item-overlay">
+              <div class="overlay-filename">${img.key}</div>
+              <button class="delete-btn" onclick="deleteImage(event, '${img.key}')">🗑 Delete</button>
+            </div>
+          </div>
+        `).join('')}</div>`;
+      } catch (e) {
+        document.getElementById('galleryContainer').innerHTML =
+          '<div class="empty-state">Could not load images.</div>';
+      }
+    }
+
+    async function deleteImage(e, key) {
+      e.stopPropagation();
+      if (!confirm(`Delete "${key}"?`)) return;
+      await fetch(`/images/${encodeURIComponent(key)}`, { method: 'DELETE' });
+      loadGallery();
+    }
+
+    function openLightbox(src) {
+      document.getElementById('lightboxImg').src = src;
+      document.getElementById('lightbox').classList.add('active');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('active');
+      document.getElementById('lightboxImg').src = '';
+    }
+
+    // Drag and drop
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        selectedFile = file;
+        const fileEl = document.getElementById('selectedFile');
+        fileEl.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        fileEl.style.display = 'block';
+        const btn = document.getElementById('uploadBtn');
+        btn.disabled = false;
+        btn.textContent = 'Upload Image →';
+      }
+    });
+
+    loadGallery();
+  </script>
+
+</body>
+</html>
