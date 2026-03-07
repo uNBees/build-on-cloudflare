@@ -1,6 +1,6 @@
 # Build on Cloudflare
 
-A portfolio of 8 beginner-friendly apps built on the Cloudflare developer platform. Each project explores a different Cloudflare service — proving that even a novice can ship real, production-grade apps on the edge.
+A portfolio of 9 beginner-friendly apps built on the Cloudflare developer platform. Each project explores a different Cloudflare service — proving that even a novice can ship real, production-grade apps on the edge.
 
 🌐 **Live site:** [build.siliceoroman.xyz](https://build.siliceoroman.xyz)
 
@@ -18,6 +18,7 @@ A portfolio of 8 beginner-friendly apps built on the Cloudflare developer platfo
 | 06 | AI Chatbot | Workers AI | `npx wrangler deploy` |
 | 07 | MCP Server | Workers + MCP | `npx wrangler deploy` |
 | 08 | Cloudflare MCP Guide | Pages | `git push` |
+| 09 | Guestbook v2 | Workers + D1 + Turnstile | `npx wrangler deploy` |
 
 ---
 
@@ -29,6 +30,7 @@ A portfolio of 8 beginner-friendly apps built on the Cloudflare developer platfo
 - **Workers KV** — globally replicated key-value store
 - **R2 Object Storage** — S3-compatible storage with no egress fees
 - **Workers AI** — LLM inference at the edge (Llama 3.1)
+- **Turnstile** — privacy-friendly bot protection, no CAPTCHAs required
 - **MCP Protocol** — Model Context Protocol for AI tool use
 - **Wrangler CLI** — Cloudflare's developer CLI tool
 
@@ -56,11 +58,17 @@ npx wrangler dev
 
 ### Deployment
 ```bash
-# Worker projects (02-07)
+# Worker projects (02-07, 09)
 npx wrangler deploy
 
 # Pages projects (01, 08)
 git push  # Cloudflare auto-deploys on push
+```
+
+### Secrets
+Sensitive values like API keys are stored using Wrangler's secret manager and are never committed to this repo:
+```bash
+npx wrangler secret put SECRET_NAME
 ```
 
 ---
