@@ -2,3 +2,8 @@ node_modules/
 .wrangler/
 package-lock.json
 *.log
+
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
