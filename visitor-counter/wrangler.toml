@@ -1,0 +1,7 @@
+name = "visitor-counter"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "COUNTER"
+id = "18616c97e03b46c0aa72e5e1d568a3f8"

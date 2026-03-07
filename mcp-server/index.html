@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloudflare MCP Guide — Build on Cloudflare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cf-orange: #F6821F;
+      --cf-dark: #0A0A0B;
+      --cf-dark-2: #111114;
+      --cf-dark-3: #1A1A1F;
+      --cf-dark-4: #222228;
+      --cf-border: rgba(255,255,255,0.07);
+      --cf-text: #E8E8EC;
+      --cf-muted: #6B6B7A;
+    }
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--cf-dark);
+      color: var(--cf-text);
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(246,130,31,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+      background: rgba(10,10,11,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--cf-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--cf-text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .logo span { color: var(--cf-orange); }
+    .back-link {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--cf-text); }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .page-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.25);
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #fff;
+      margin-bottom: 0.75rem;
+    }
+    .subtitle {
+      color: var(--cf-muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-bottom: 1rem;
+      max-width: 600px;
+    }
+
+    /* WHAT IS MCP */
+    .info-card {
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+    }
+    .info-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+    .info-text {
+      font-size: 0.88rem;
+      color: var(--cf-muted);
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+    .info-text strong { color: var(--cf-text); }
+    .flow-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1.25rem;
+    }
+    .flow-box {
+      background: var(--cf-dark-3);
+      border: 1px solid var(--cf-border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-text);
+    }
+    .flow-arrow {
+      color: var(--cf-orange);
+      font-size: 1rem;
+    }
+
+    /* SECTION HEADER */
+    .section-label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      margin-bottom: 0.5rem;
+    }
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .section-desc {
+      color: var(--cf-muted);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    /* MCP SERVER CARDS */
+    .servers-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+    .server-card {
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .server-card:hover { border-color: rgba(246,130,31,0.25); }
+    .server-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--cf-border);
+    }
+    .server-info { flex: 1; }
+    .server-name-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .server-icon { font-size: 1.3rem; }
+    .server-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .server-tag {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.2);
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+    }
+    .server-desc {
+      font-size: 0.85rem;
+      color: var(--cf-muted);
+      line-height: 1.6;
+      max-width: 580px;
+    }
+    .server-link {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--cf-orange);
+      text-decoration: none;
+      border: 1px solid rgba(246,130,31,0.25);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      transition: background 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-left: 1rem;
+    }
+    .server-link:hover { background: rgba(246,130,31,0.1); }
+
+    /* CONFIG SNIPPET */
+    .server-config { padding: 1.5rem; }
+    .config-label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cf-muted);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .copy-btn {
+      background: var(--cf-dark-4);
+      color: var(--cf-muted);
+      border: 1px solid var(--cf-border);
+      border-radius: 5px;
+      padding: 0.25rem 0.65rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.62rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .copy-btn:hover { color: var(--cf-orange); border-color: rgba(246,130,31,0.3); }
+    .copy-btn.copied { color: #22c55e; border-color: rgba(34,197,94,0.3); }
+    .config-code {
+      background: var(--cf-dark-3);
+      border: 1px solid var(--cf-border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--cf-text);
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .config-code .key { color: #60a5fa; }
+    .config-code .val { color: #34d399; }
+    .config-code .str { color: #fbbf24; }
+
+    /* TOOLS LIST */
+    .tools-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0 1.5rem 1.5rem;
+    }
+    .tool-pill {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--cf-muted);
+      background: var(--cf-dark-3);
+      border: 1px solid var(--cf-border);
+      padding: 0.25rem 0.65rem;
+      border-radius: 100px;
+    }
+
+    /* CONNECT GUIDE */
+    .connect-section { margin-bottom: 4rem; }
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--cf-border);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .step-item {
+      background: var(--cf-dark-2);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.2);
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-content { flex: 1; }
+    .step-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.3rem;
+    }
+    .step-desc {
+      font-size: 0.82rem;
+      color: var(--cf-muted);
+      line-height: 1.6;
+    }
+    .step-desc code {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.75rem;
+      background: var(--cf-dark-3);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      color: var(--cf-orange);
+    }
+    .step-desc a { color: var(--cf-orange); }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      border-top: 1px solid var(--cf-border);
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+    }
+    footer a { color: var(--cf-orange); text-decoration: none; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .server-card { animation: fadeUp 0.4s ease both; }
+    .server-card:nth-child(2) { animation-delay: 0.05s; }
+    .server-card:nth-child(3) { animation-delay: 0.10s; }
+    .server-card:nth-child(4) { animation-delay: 0.15s; }
+    .server-card:nth-child(5) { animation-delay: 0.20s; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="https://build.siliceoroman.xyz" class="logo">Build on <span>Cloudflare</span></a>
+    <a href="https://build.siliceoroman.xyz" class="back-link">← Back to projects</a>
+  </header>
+
+  <main>
+    <div class="page-badge">Project 08 — MCP + Claude</div>
+    <h1>Cloudflare MCP Guide</h1>
+    <p class="subtitle">Cloudflare runs a suite of official remote MCP servers. Connect Claude to them and manage your Cloudflare account, search docs, run AI models, and more — all through conversation.</p>
+
+    <!-- WHAT IS MCP -->
+    <div class="info-card">
+      <div class="info-title">⚡ What is an MCP Server?</div>
+      <div class="info-text">
+        <strong>Model Context Protocol (MCP)</strong> is an open standard created by Anthropic that lets AI models like Claude connect to external tools and data sources. Think of it like a plugin system for AI.
+      </div>
+      <div class="info-text">
+        Instead of Claude only knowing what's in its training data, it can call your MCP server to get real data, perform real actions, and interact with real services — like your Cloudflare account.
+      </div>
+      <div class="flow-row">
+        <div class="flow-box">👤 You (in Claude)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">🤖 Claude</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">🔌 MCP Server</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">☁️ Cloudflare API</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">✅ Result</div>
+      </div>
+    </div>
+
+    <!-- HOW TO CONNECT -->
+    <div class="connect-section">
+      <div class="section-label">// Getting started</div>
+      <div class="section-title">How to Connect Claude</div>
+      <div class="section-desc">Follow these steps once to connect Claude Desktop to any Cloudflare MCP server.</div>
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Install Claude Desktop</div>
+            <div class="step-desc">Download Claude Desktop from <a href="https://claude.ai/download" target="_blank">claude.ai/download</a> and sign in with your Anthropic account.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Open the config file</div>
+            <div class="step-desc">Go to <strong>Settings → Developer → Edit Config</strong> in Claude Desktop. This opens <code>claude_desktop_config.json</code> in your text editor.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Add an MCP server</div>
+            <div class="step-desc">Copy one of the config snippets below and paste it into your config file. Each server has a ready-to-use snippet with a copy button.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Restart Claude Desktop</div>
+            <div class="step-desc">Save the config file and restart Claude Desktop. Look for the 🔌 tools icon in the chat input — that means your MCP server is connected!</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">Start chatting!</div>
+            <div class="step-desc">Try asking Claude something like <code>"Search the Cloudflare docs for Workers KV"</code> or <code>"List my Cloudflare Workers"</code> and watch it use the tools.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MCP SERVERS -->
+    <div class="section-label">// Official servers</div>
+    <div class="section-title">Cloudflare MCP Servers</div>
+    <div class="section-desc">Each server exposes a different set of tools. Click the copy button to get the config snippet ready to paste into Claude Desktop.</div>
+
+    <div class="servers-grid">
+
+      <!-- Cloudflare Docs -->
+      <div class="server-card">
+        <div class="server-header">
+          <div class="server-info">
+            <div class="server-name-row">
+              <span class="server-icon">📚</span>
+              <span class="server-name">Cloudflare Docs</span>
+              <span class="server-tag">Free</span>
+            </div>
+            <div class="server-desc">Search the entire Cloudflare documentation directly from Claude. Ask questions about any product and get accurate, up-to-date answers sourced straight from the docs.</div>
+          </div>
+          <a href="https://docs.mcp.cloudflare.com" target="_blank" class="server-link">Docs ↗</a>
+        </div>
+        <div class="tools-list">
+          <span class="tool-pill">search_documentation</span>
+          <span class="tool-pill">get_page_content</span>
+        </div>
+        <div class="server-config">
+          <div class="config-label">
+            Claude Desktop Config
+            <button class="copy-btn" onclick="copyConfig(this, 'docs-config')">Copy</button>
+          </div>
+          <div class="config-code" id="docs-config"><span class="key">{
+  "mcpServers"</span>: <span class="val">{
+    </span><span class="str">"cloudflare-docs"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://docs.mcp.cloudflare.com/sse"</span>
+    <span class="val">}
+  }
+}</span></div>
+        </div>
+      </div>
+
+      <!-- Cloudflare API -->
+      <div class="server-card">
+        <div class="server-header">
+          <div class="server-info">
+            <div class="server-name-row">
+              <span class="server-icon">🔧</span>
+              <span class="server-name">Cloudflare API</span>
+              <span class="server-tag">Auth Required</span>
+            </div>
+            <div class="server-desc">Access the full Cloudflare API — over 2,500 endpoints — through just two tools. Search for available operations and execute them directly. Manage zones, DNS, Workers, and more.</div>
+          </div>
+          <a href="https://developers.cloudflare.com/api/" target="_blank" class="server-link">Docs ↗</a>
+        </div>
+        <div class="tools-list">
+          <span class="tool-pill">search</span>
+          <span class="tool-pill">execute</span>
+        </div>
+        <div class="server-config">
+          <div class="config-label">
+            Claude Desktop Config
+            <button class="copy-btn" onclick="copyConfig(this, 'api-config')">Copy</button>
+          </div>
+          <div class="config-code" id="api-config"><span class="key">{
+  "mcpServers"</span>: <span class="val">{
+    </span><span class="str">"cloudflare-api"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://api.mcp.cloudflare.com/sse"</span>
+    <span class="val">}
+  }
+}</span></div>
+        </div>
+      </div>
+
+      <!-- Workers Bindings -->
+      <div class="server-card">
+        <div class="server-header">
+          <div class="server-info">
+            <div class="server-name-row">
+              <span class="server-icon">⚙️</span>
+              <span class="server-name">Workers Bindings</span>
+              <span class="server-tag">Auth Required</span>
+            </div>
+            <div class="server-desc">Manage your Workers bindings — D1 databases, R2 buckets, KV namespaces, and more — conversationally. Ask Claude to query your D1 database or list your R2 objects.</div>
+          </div>
+          <a href="https://developers.cloudflare.com/workers/" target="_blank" class="server-link">Docs ↗</a>
+        </div>
+        <div class="tools-list">
+          <span class="tool-pill">list_bindings</span>
+          <span class="tool-pill">query_d1</span>
+          <span class="tool-pill">list_r2_objects</span>
+          <span class="tool-pill">get_kv_value</span>
+        </div>
+        <div class="server-config">
+          <div class="config-label">
+            Claude Desktop Config
+            <button class="copy-btn" onclick="copyConfig(this, 'bindings-config')">Copy</button>
+          </div>
+          <div class="config-code" id="bindings-config"><span class="key">{
+  "mcpServers"</span>: <span class="val">{
+    </span><span class="str">"cloudflare-bindings"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://bindings.mcp.cloudflare.com/sse"</span>
+    <span class="val">}
+  }
+}</span></div>
+        </div>
+      </div>
+
+      <!-- Workers Observability -->
+      <div class="server-card">
+        <div class="server-header">
+          <div class="server-info">
+            <div class="server-name-row">
+              <span class="server-icon">🔍</span>
+              <span class="server-name">Workers Observability</span>
+              <span class="server-tag">Auth Required</span>
+            </div>
+            <div class="server-desc">Browse your Worker logs, errors, and performance data through Claude. Ask things like "show me recent errors in my guestbook Worker" and get instant answers.</div>
+          </div>
+          <a href="https://developers.cloudflare.com/workers/observability/" target="_blank" class="server-link">Docs ↗</a>
+        </div>
+        <div class="tools-list">
+          <span class="tool-pill">get_worker_logs</span>
+          <span class="tool-pill">get_errors</span>
+          <span class="tool-pill">get_analytics</span>
+        </div>
+        <div class="server-config">
+          <div class="config-label">
+            Claude Desktop Config
+            <button class="copy-btn" onclick="copyConfig(this, 'observability-config')">Copy</button>
+          </div>
+          <div class="config-code" id="observability-config"><span class="key">{
+  "mcpServers"</span>: <span class="val">{
+    </span><span class="str">"cloudflare-observability"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://observability.mcp.cloudflare.com/sse"</span>
+    <span class="val">}
+  }
+}</span></div>
+        </div>
+      </div>
+
+      <!-- Workers AI -->
+      <div class="server-card">
+        <div class="server-header">
+          <div class="server-info">
+            <div class="server-name-row">
+              <span class="server-icon">🤖</span>
+              <span class="server-name">Workers AI</span>
+              <span class="server-tag">Auth Required</span>
+            </div>
+            <div class="server-desc">Run AI models on Cloudflare's GPU infrastructure directly from Claude. Access text generation, image classification, embeddings, speech recognition, and more.</div>
+          </div>
+          <a href="https://developers.cloudflare.com/workers-ai/" target="_blank" class="server-link">Docs ↗</a>
+        </div>
+        <div class="tools-list">
+          <span class="tool-pill">run_model</span>
+          <span class="tool-pill">list_models</span>
+          <span class="tool-pill">get_model_info</span>
+        </div>
+        <div class="server-config">
+          <div class="config-label">
+            Claude Desktop Config
+            <button class="copy-btn" onclick="copyConfig(this, 'ai-config')">Copy</button>
+          </div>
+          <div class="config-code" id="ai-config"><span class="key">{
+  "mcpServers"</span>: <span class="val">{
+    </span><span class="str">"cloudflare-ai"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://ai.mcp.cloudflare.com/sse"</span>
+    <span class="val">}
+  }
+}</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COMBINE ALL -->
+    <div class="section-label">// Power user tip</div>
+    <div class="section-title">Use All Servers at Once</div>
+    <div class="section-desc">You can add multiple MCP servers to Claude at the same time. Copy this config to connect all Cloudflare MCP servers in one go.</div>
+    <div class="server-card" style="margin-bottom:4rem;">
+      <div class="server-config" style="padding-top:1.5rem;">
+        <div class="config-label">
+          All Cloudflare MCP Servers
+          <button class="copy-btn" onclick="copyConfig(this, 'all-config')">Copy All</button>
+        </div>
+        <div class="config-code" id="all-config"><span class="key">{
+  "mcpServers"</span>: <span class="val">{
+    </span><span class="str">"cloudflare-docs"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://docs.mcp.cloudflare.com/sse"</span>
+    <span class="val">},
+    </span><span class="str">"cloudflare-api"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://api.mcp.cloudflare.com/sse"</span>
+    <span class="val">},
+    </span><span class="str">"cloudflare-bindings"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://bindings.mcp.cloudflare.com/sse"</span>
+    <span class="val">},
+    </span><span class="str">"cloudflare-observability"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://observability.mcp.cloudflare.com/sse"</span>
+    <span class="val">},
+    </span><span class="str">"cloudflare-ai"</span>: <span class="val">{
+      </span><span class="key">"type"</span>: <span class="str">"sse"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://ai.mcp.cloudflare.com/sse"</span>
+    <span class="val">}
+  }
+}</span></div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    Built with ☁️ on <a href="https://cloudflare.com" target="_blank">Cloudflare</a> &nbsp;·&nbsp;
+    <a href="https://developers.cloudflare.com/agents/configuration/mcp/" target="_blank">Cloudflare MCP Docs</a> &nbsp;·&nbsp;
+    <a href="https://modelcontextprotocol.io" target="_blank">MCP Protocol</a>
+  </footer>
+
+  <script>
+    function copyConfig(btn, id) {
+      const el = document.getElementById(id);
+      // Extract plain text from the colored HTML
+      const text = el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = id === 'all-config' ? 'Copy All' : 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+  </script>
+
+</body>
+</html>

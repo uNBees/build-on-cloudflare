@@ -1,0 +1,7 @@
+name = "url-shortener"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "LINKS"
+id = "ecc53633726f44d6b5afe4a439e8464b"

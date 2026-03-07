@@ -1,0 +1,9 @@
+name = "guestbook-v2"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "guestbook-v2-db"
+database_id = "9941dda1-040c-4bd7-955b-a24855117919"
+

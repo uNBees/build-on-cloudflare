@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="https://build.siliceoroman.xyz/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitor Counter — Build on Cloudflare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cf-orange: #F6821F;
+      --cf-dark: #0A0A0B;
+      --cf-dark-2: #111114;
+      --cf-dark-3: #1A1A1F;
+      --cf-dark-4: #222228;
+      --cf-border: rgba(255,255,255,0.07);
+      --cf-text: #E8E8EC;
+      --cf-muted: #6B6B7A;
+    }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--cf-dark);
+      color: var(--cf-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(246,130,31,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+      background: rgba(10,10,11,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--cf-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--cf-text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--cf-orange); }
+
+    .back-link {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--cf-text); }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .page-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.25);
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #fff;
+      margin-bottom: 0.75rem;
+      text-align: center;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+
+    .subtitle {
+      color: var(--cf-muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-bottom: 4rem;
+      text-align: center;
+      max-width: 480px;
+      animation: fadeUp 0.5s 0.2s ease both;
+    }
+
+    /* COUNTER */
+    .counter-card {
+      background: var(--cf-dark-2);
+      border: 1px solid var(--cf-border);
+      border-radius: 24px;
+      padding: 3rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.5s 0.3s ease both;
+      min-width: 340px;
+    }
+
+    .counter-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(246,130,31,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .counter-label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cf-muted);
+      margin-bottom: 1rem;
+    }
+
+    .counter-value {
+      font-size: 6rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      transition: transform 0.15s, color 0.15s;
+    }
+
+    .counter-value.bump {
+      transform: scale(1.08);
+      color: var(--cf-orange);
+    }
+
+    .counter-sublabel {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--cf-muted);
+      margin-bottom: 2rem;
+    }
+
+    .counter-btn {
+      background: var(--cf-orange);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.85rem 2rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 0 24px rgba(246,130,31,0.2);
+    }
+
+    .counter-btn:hover {
+      background: #e07318;
+      transform: translateY(-1px);
+      box-shadow: 0 0 32px rgba(246,130,31,0.35);
+    }
+
+    .counter-btn:active { transform: scale(0.97); }
+
+    /* STATS ROW */
+    .stats-row {
+      display: flex;
+      gap: 1px;
+      background: var(--cf-border);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 3rem;
+      width: 100%;
+      max-width: 500px;
+      animation: fadeUp 0.5s 0.4s ease both;
+    }
+
+    .stat-item {
+      flex: 1;
+      background: var(--cf-dark-2);
+      padding: 1.25rem 1rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.03em;
+    }
+
+    .stat-value span { color: var(--cf-orange); }
+
+    .stat-label {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--cf-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 0.2rem;
+    }
+
+    /* HOW IT WORKS */
+    .how-it-works {
+      margin-top: 4rem;
+      max-width: 500px;
+      width: 100%;
+      animation: fadeUp 0.5s 0.5s ease both;
+    }
+
+    .how-title {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cf-muted);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .how-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--cf-border);
+      border: 1px solid var(--cf-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .how-step {
+      background: var(--cf-dark-2);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .step-num {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--cf-orange);
+      background: rgba(246,130,31,0.1);
+      border: 1px solid rgba(246,130,31,0.2);
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-text {
+      font-size: 0.83rem;
+      color: var(--cf-muted);
+      line-height: 1.5;
+    }
+
+    .step-text strong { color: var(--cf-text); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="https://build.siliceoroman.xyz" class="logo">Build on <span>Cloudflare</span></a>
+    <a href="https://build.siliceoroman.xyz" class="back-link">← Back to projects</a>
+  </header>
+
+  <main>
+    <div class="page-badge">Project 04 — Workers KV</div>
+    <h1>Visitor Counter</h1>
+    <p class="subtitle">A real-time hit counter powered by Cloudflare Workers KV — a globally replicated key-value store.</p>
+
+    <div class="counter-card">
+      <div class="counter-label">Total page visits</div>
+      <div class="counter-value" id="counterValue">—</div>
+      <div class="counter-sublabel">and counting...</div>
+      <button class="counter-btn" onclick="increment()">Click to Count +1</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-value" id="sessionClicks">0</div>
+        <div class="stat-label">This Session</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value"><span>KV</span></div>
+        <div class="stat-label">Storage</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value"><span>⚡</span></div>
+        <div class="stat-label">Edge Speed</div>
+      </div>
+    </div>
+
+    <div class="how-it-works">
+      <div class="how-title">// How it works</div>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="step-num">1</div>
+          <div class="step-text">Browser sends a <strong>POST /increment</strong> request to the Worker</div>
+        </div>
+        <div class="how-step">
+          <div class="step-num">2</div>
+          <div class="step-text">Worker reads the current count from <strong>Workers KV</strong></div>
+        </div>
+        <div class="how-step">
+          <div class="step-num">3</div>
+          <div class="step-text">Worker increments the value and <strong>writes it back to KV</strong></div>
+        </div>
+        <div class="how-step">
+          <div class="step-num">4</div>
+          <div class="step-text">New count is returned and the <strong>display updates instantly</strong></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let sessionClicks = 0;
+
+    async function loadCount() {
+      try {
+        const res = await fetch('/count');
+        const data = await res.json();
+        document.getElementById('counterValue').textContent = data.count.toLocaleString();
+      } catch (e) {
+        document.getElementById('counterValue').textContent = '?';
+      }
+    }
+
+    async function increment() {
+      try {
+        const res = await fetch('/increment', { method: 'POST' });
+        const data = await res.json();
+        const el = document.getElementById('counterValue');
+        el.textContent = data.count.toLocaleString();
+        el.classList.add('bump');
+        setTimeout(() => el.classList.remove('bump'), 200);
+        sessionClicks++;
+        document.getElementById('sessionClicks').textContent = sessionClicks;
+      } catch (e) {
+        alert('Error updating counter.');
+      }
+    }
+
+    loadCount();
+  </script>
+
+</body>
+</html>
