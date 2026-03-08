@@ -1,0 +1,6 @@
+name = "build-on-cloudflare"
+compatibility_date = "2024-09-23"
+
+[assets]
+directory = "."
+include = ["index.html", "favicon.png"]
