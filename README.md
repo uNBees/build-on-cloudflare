@@ -1,6 +1,6 @@
 # Build on Cloudflare
 
-A portfolio of 9 beginner-friendly apps built on the Cloudflare developer platform. Each project explores a different Cloudflare service — proving that even a novice can ship real, production-grade apps on the edge.
+A portfolio of 10 beginner-friendly apps built on the Cloudflare developer platform. Each project explores a different Cloudflare service — proving that even a novice can ship real, production-grade apps on the edge.
 
 🌐 **Live site:** [build.siliceoroman.xyz](https://build.siliceoroman.xyz)
 
@@ -19,6 +19,7 @@ A portfolio of 9 beginner-friendly apps built on the Cloudflare developer platfo
 | 07 | MCP Server | Workers + MCP | `npx wrangler deploy` |
 | 08 | Cloudflare MCP Guide | Pages | `git push` |
 | 09 | Guestbook v2 | Workers + D1 + Turnstile | `npx wrangler deploy` |
+| 10 | Terraform Demo | Workers + KV + Terraform | `terraform apply` |
 
 ---
 
@@ -32,6 +33,7 @@ A portfolio of 9 beginner-friendly apps built on the Cloudflare developer platfo
 - **Workers AI** — LLM inference at the edge (Llama 3.1)
 - **Turnstile** — privacy-friendly bot protection, no CAPTCHAs required
 - **MCP Protocol** — Model Context Protocol for AI tool use
+- **Terraform** — Infrastructure as Code via the Cloudflare provider
 - **Wrangler CLI** — Cloudflare's developer CLI tool
 
 ---
@@ -41,6 +43,7 @@ A portfolio of 9 beginner-friendly apps built on the Cloudflare developer platfo
 ### Prerequisites
 - [Node.js v20+](https://nodejs.org)
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) — `npm install -g wrangler`
+- [Terraform](https://developer.hashicorp.com/terraform/install) — required for Project 10
 - A free [Cloudflare account](https://cloudflare.com)
 
 ### Local Development
@@ -63,6 +66,10 @@ npx wrangler deploy
 
 # Pages projects (01, 08)
 git push  # Cloudflare auto-deploys on push
+
+# Terraform project (10)
+cd terraform-demo
+terraform apply
 ```
 
 ### Secrets
@@ -70,6 +77,8 @@ Sensitive values like API keys are stored using Wrangler's secret manager and ar
 ```bash
 npx wrangler secret put SECRET_NAME
 ```
+
+For the Terraform project, secrets are stored in `terraform.tfvars` which is excluded via `.gitignore`.
 
 ---
 
