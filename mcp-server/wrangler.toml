@@ -1,0 +1,13 @@
+name = "mcp-server"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[durable_objects]
+bindings = [
+  { name = "MCP_OBJECT", class_name = "MyMCP" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MyMCP"]
